@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Бизнес-Аналитика и Учёт Смен</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style type="text/tailwindcss">
+body{font-family:Inter,sans-serif;@apply bg-slate-950 text-slate-100 antialiased}
+.card{@apply bg-slate-900 border border-slate-800 rounded-2xl p-5}
+.inp{@apply w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-emerald-500}
+.btn{@apply px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition}
+.on,.on:hover{@apply bg-emerald-600 text-white font-semibold}
+.lbl{@apply block text-xs text-slate-400 mb-1}
+.row{@apply flex justify-between text-xs py-1}
+h3{@apply text-sm font-bold mb-2}
+input[type=date],input[type=month]{color-scheme:dark}
+</style></head>
+<body>
+<div id="auth" class="min-h-screen flex items-center justify-center p-4">
+<form id="af" autocomplete="off" class="card max-w-sm w-full p-7 space-y-4">
+<h1 class="text-2xl font-bold text-center">Бизнес-Аналитика</h1>
+<p class="text-center text-slate-400 text-sm">Вход в систему</p>
+<div><label class="lbl">Логин</label><input id="al" class="inp" autocomplete="off" required></div>
+<div><label class="lbl">Пароль</label><input id="ap" type="password" class="inp" autocomplete="new-password" required></div>
+<p id="ae" class="hidden text-rose-400 text-xs">Неверный логин или пароль</p>
+<button class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-semibold">Войти</button>
+</form></div>
+
+<div id="app" class="hidden">
+<header class="sticky top-0 z-30 bg-slate-900/90 backdrop-blur border-b border-slate-800"><div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+<b>Бизнес-Аналитика</b><div class="flex gap-2"><button id="sb" class="btn">⚙ Настройки</button><button id="lo" class="btn">Выход</button></div></div></header>
+
+<section id="sp" class="hidden bg-slate-900 border-b border-slate-800"><div class="max-w-6xl mx-auto p-4 grid md:grid-cols-2 gap-4">
+<div class="space-y-2"><h3>Имена кассиров</h3><input id="n1" class="inp"><input id="n2" class="inp"><button id="sn" class="btn on">Сохранить имена</button></div>
+<div><h3>Валюты и курсы</h3><p class="text-[11px] text-slate-500 mb-2">Пример: 20 TMT = 10 INR. Курс только для справки, в прибыль входят одни манаты.</p><div id="cl" class="space-y-2 mb-2"></div><button id="sr" class="btn on mb-3">Сохранить курсы</button>
+<div class="flex gap-2"><input id="cc" class="inp uppercase" maxlength="5" placeholder="Код (INR)"><input id="cn" class="inp" placeholder="Название"></div>
+<div class="flex items-center gap-1.5 mt-2 text-xs"><input id="ct" type="number" step="any" min="0" class="inp !w-20" placeholder="20"><span>TMT =</span><input id="cv" type="number" step="any" min="0" class="inp !w-20" placeholder="10"><span>валюты</span><button id="ca" class="btn ml-auto">+ Добавить</button></div></div>
+</div></section>
+
+<main class="max-w-6xl mx-auto p-4 space-y-5">
+<div class="card flex flex-wrap gap-3 items-center !p-3">
+<div class="flex gap-1" id="tabs"><button data-m="day" class="btn">День</button><button data-m="week" class="btn">Неделя</button><button data-m="month" class="btn">Месяц</button></div>
+<input id="pd" class="inp !w-auto">
+<select id="cf" class="inp !w-auto"><option value="all">Все кассиры</option><option value="c1"></option><option value="c2"></option></select>
+<button id="ex" class="btn ml-auto">⬇ Экспорт CSV</button></div>
+
+<div id="wk" class="grid grid-cols-2 sm:grid-cols-5 gap-2"></div>
+<h2 id="pt" class="font-bold text-base"></h2>
+<div id="kp" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+
+<div class="grid lg:grid-cols-3 gap-4">
+<div class="card"><h3>Выручка по валютам <span class="text-slate-500 font-normal">(только данные)</span></h3><div id="cu"></div></div>
+<div class="card"><h3>Кассиры <span class="text-slate-500 font-normal">(в манатах)</span></h3><div id="cp"></div></div>
+<div class="card"><h3>Динамика по дням (TMT)</h3><div class="relative h-44"><canvas id="ch"></canvas></div></div>
+</div>
+
+<div class="grid lg:grid-cols-5 gap-4">
+<form id="sf" class="card lg:col-span-2 space-y-3">
+<h3 id="ft">Добавить смену</h3><input type="hidden" id="eid">
+<div class="grid grid-cols-2 gap-2"><div><label class="lbl">Дата</label><input type="date" id="sd" required class="inp"></div>
+<div><label class="lbl">Кассир</label><select id="sc" class="inp"><option value="c1"></option><option value="c2"></option></select></div></div>
+<div><label class="lbl">Выручка за смену</label><div id="si" class="grid grid-cols-2 gap-2"></div></div>
+<div class="grid grid-cols-2 gap-2"><div><label class="lbl">Расход (TMT)</label><input id="se" type="number" step="0.01" min="0" class="inp"></div>
+<div><label class="lbl">Назначение</label><input id="sn2" class="inp"></div></div>
+<div class="flex justify-between bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-3 py-2 text-sm"><span class="text-emerald-300">Прибыль смены (TMT)</span><b id="lp" class="text-emerald-400">0.00</b></div>
+<div class="flex gap-2"><button class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-semibold text-sm">Сохранить смену</button><button type="button" id="ce" class="btn hidden">Отмена</button></div>
+</form>
+<div class="card lg:col-span-3 !p-0 overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-xs text-left">
+<thead class="bg-slate-950 text-slate-400 uppercase"><tr><th class="p-3">Дата</th><th>Кассир</th><th>Валюты</th><th class="text-right">Продажи TMT</th><th class="text-right">Расход</th><th class="text-right">Прибыль</th><th></th></tr></thead>
+<tbody id="tb" class="divide-y divide-slate-800"></tbody></table></div>
+<p id="em" class="hidden p-8 text-center text-slate-400 text-sm">Записей за этот период нет</p></div>
+</div>
+</main></div>
+
+<script>
+const $=id=>document.getElementById(id),L=k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}};
+const E=s=>String(s).replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
+const DEF=[['TMT','Манат',1,1],['USD','Доллар США',19.5,1],['EUR','Евро',21.2,1],['RUB','Рубль',21,100],['CNY','Юань',2.7,1],['TRY','Лира',58,100]].map(([code,name,ta,ua])=>({code,name,ta,ua}));
+const MG=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+const MN=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+let cur=(L('az_cur')||DEF).map(c=>{const d=DEF.find(x=>x.code===c.code)||{};return{ta:d.ta||0,ua:d.ua||1,...c}}),cash=L('az_cash')||{c1:'Кассир 1',c2:'Кассир 2'},shifts=L('az_shifts'),chart=null;
+if(!shifts)shifts=(L('altyn_shifts')||[]).map(s=>({id:s.id,date:s.date,cashier:s.cashierId,amounts:s.amounts||{},exp:s.expenseCurrency==='TMT'?(s.expenseAmount||0):0,note:s.expenseNote||''}));
+const save=()=>{localStorage.setItem('az_cur',JSON.stringify(cur));localStorage.setItem('az_cash',JSON.stringify(cash));localStorage.setItem('az_shifts',JSON.stringify(shifts))};
+const pad=n=>String(n).padStart(2,'0'),ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`,T=ymd(new Date());
+const f=n=>new Intl.NumberFormat('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n||0);
+const dim=m=>new Date(+m.slice(0,4),+m.slice(5),0).getDate();
+const weeks=m=>{const l=dim(m),w=[];for(let s=1;s<=l;s+=7)w.push([s,Math.min(s+6,l)]);return w};
+const wi=d=>Math.floor((+d.slice(8)-1)/7);
+const V={mode:'day',cf:'all',day:T,month:T.slice(0,7),wk:wi(T)};
+
+function range(){const m=V.month,y=m.slice(0,4),mi=+m.slice(5)-1;
+ if(V.mode==='day')return[V.day,V.day,V.day.split('-').reverse().join('.')];
+ if(V.mode==='month')return[m+'-01',m+'-'+pad(dim(m)),MN[mi]+' '+y];
+ const w=weeks(m),[a,b]=w[Math.min(V.wk,w.length-1)];
+ return[m+'-'+pad(a),m+'-'+pad(b),`${a}–${b} ${MG[mi]} ${y}`]}
+const sel=(a,b,c)=>shifts.filter(s=>s.date>=a&&s.date<=b&&(c==='all'||s.cashier===c));
+const st=l=>{const r={n:l.length,rev:0,exp:0,c:{}};l.forEach(s=>{r.rev+=s.amounts.TMT||0;r.exp+=s.exp||0;for(const k in s.amounts)r.c[k]=(r.c[k]||0)+s.amounts[k]});r.p=r.rev-r.exp;return r};
+const R=(k,v,c='')=>`<div class="row"><span class="text-slate-400">${k}</span><b class="${c}">${v}</b></div>`;
+
+function render(){
+ const[a,b,lab]=range(),l=sel(a,b,V.cf),r=st(l),mi=+V.month.slice(5)-1;
+ document.querySelectorAll('#tabs .btn').forEach(x=>x.classList.toggle('on',x.dataset.m===V.mode));
+ const pd=$('pd');pd.type=V.mode==='day'?'date':'month';pd.value=V.mode==='day'?V.day:V.month;
+ $('cf').value=V.cf;
+ $('wk').innerHTML=V.mode==='week'?weeks(V.month).map(([x,y],i)=>{const q=st(sel(V.month+'-'+pad(x),V.month+'-'+pad(y),V.cf));
+  return `<button data-w="${i}" class="btn text-left !p-3 ${i==V.wk?'on':''}"><div class="font-semibold">${x}–${y} ${MG[mi].slice(0,3)}</div><div class="text-[11px] opacity-80">Продажи: ${f(q.rev)}</div><div class="text-[11px] opacity-80">Расход: ${f(q.exp)}</div><div class="text-[11px] opacity-80">Прибыль: ${f(q.p)}</div></button>`}).join(''):'';
+ $('pt').textContent=`${lab} · ${V.cf==='all'?'все кассиры':cash[V.cf]} · смен: ${r.n}`;
+ $('kp').innerHTML=[['Продажи в манатах',f(r.rev)+' TMT','text-white'],['Расходы',f(r.exp)+' TMT','text-rose-400'],['Прибыль',f(r.p)+' TMT','text-emerald-400'],['Рентабельность',(r.rev?r.p/r.rev*100:0).toFixed(1)+'%','text-amber-400']]
+  .map(([t,v,c])=>`<div class="card !p-4"><div class="text-[11px] uppercase text-slate-400">${t}</div><div class="text-xl font-extrabold ${c}">${v}</div></div>`).join('');
+ const cv=c=>(r.c[c.code]||0)*(c.ta&&c.ua?c.ta/c.ua:0);
+ $('cu').innerHTML=cur.map(c=>R(c.code+' · '+E(c.name),f(r.c[c.code])+(c.code!=='TMT'&&c.ta?` <span class="text-slate-500 font-normal">≈ ${f(cv(c))} TMT</span>`:''),c.code==='TMT'?'text-emerald-400':'')).join('')+`<div class="border-t border-slate-800 mt-2 pt-2">${R('Всего по курсу (справочно)','≈ '+f(cur.reduce((s,c)=>s+cv(c),0))+' TMT','text-amber-400')}</div>`;
+ $('cp').innerHTML=['c1','c2'].map(c=>{const q=st(sel(a,b,c));return `<div class="mb-3"><div class="font-semibold text-sm ${c==='c1'?'text-blue-400':'text-purple-400'}">${E(cash[c])}</div>${R('Смен',q.n)}${R('Продажи',f(q.rev)+' TMT')}${R('Расход',f(q.exp)+' TMT','text-rose-400')}${R('Прибыль',f(q.p)+' TMT','text-emerald-400')}</div>`}).join('');
+ const d={};l.forEach(s=>{const o=d[s.date]||(d[s.date]={r:0,e:0});o.r+=s.amounts.TMT||0;o.e+=s.exp||0});
+ const ks=Object.keys(d).sort();if(chart)chart.destroy();
+ chart=new Chart($('ch'),{type:'bar',data:{labels:ks.map(k=>k.slice(8)+'.'+k.slice(5,7)),datasets:[{label:'Продажи',data:ks.map(k=>d[k].r),backgroundColor:'#3b82f6'},{label:'Расход',data:ks.map(k=>d[k].e),backgroundColor:'#f43f5e'},{label:'Прибыль',data:ks.map(k=>d[k].r-d[k].e),backgroundColor:'#10b981'}]},options:{maintainAspectRatio:false,plugins:{legend:{labels:{color:'#cbd5e1',boxWidth:10}}},scales:{x:{ticks:{color:'#94a3b8'}},y:{ticks:{color:'#94a3b8'}}}}});
+ $('em').classList.toggle('hidden',l.length>0);
+ $('tb').innerHTML=l.slice().sort((x,y)=>y.date.localeCompare(x.date)).map(s=>{const t=s.amounts.TMT||0;
+  return `<tr><td class="p-3">${s.date.split('-').reverse().join('.')}</td><td>${E(cash[s.cashier])}</td><td>${Object.entries(s.amounts).map(([k,v])=>`<span class="bg-slate-800 rounded px-1.5 py-0.5 mr-1">${v} ${k}</span>`).join('')}</td><td class="text-right">${f(t)}</td><td class="text-right text-rose-400" title="${E(s.note||'')}">${f(s.exp)}</td><td class="text-right text-emerald-400 font-bold">${f(t-s.exp)}</td><td class="text-center whitespace-nowrap p-2"><button data-e="${s.id}">✏️</button> <button data-d="${s.id}">🗑️</button></td></tr>`}).join('');
+}
+
+function nm(){['cf','sc'].forEach(id=>{const o=$(id).options,k=id==='cf'?1:0;o[k].text=cash.c1;o[k+1].text=cash.c2});$('n1').value=cash.c1;$('n2').value=cash.c2}
+function rc(){$('cl').innerHTML=cur.map(c=>c.code==='TMT'?`<div class="text-xs text-emerald-400">TMT · базовая валюта</div>`:`<div class="flex items-center gap-1.5 text-xs"><input type="number" step="any" min="0" data-ta="${c.code}" value="${c.ta||''}" class="inp !w-20 !py-1"><span>TMT =</span><input type="number" step="any" min="0" data-ua="${c.code}" value="${c.ua||''}" class="inp !w-20 !py-1"><b>${c.code}</b><span class="text-slate-500 truncate">${E(c.name)}</span><b data-x="${c.code}" class="ml-auto cursor-pointer text-rose-400">✕</b></div>`).join('')}
+const lp=()=>{const i=document.querySelector('[data-c=TMT]');$('lp').textContent=f((i?+i.value:0)-(+$('se').value||0))};
+function rf(v={}){$('si').innerHTML=cur.map(c=>{const t=c.code==='TMT';return `<div class="${t?'col-span-2 border-emerald-500/40':'border-slate-800'} bg-slate-950 border rounded-xl p-2"><div class="text-[11px] text-slate-400">${t?'TMT — манат (идёт в прибыль)':c.code+' · только учёт'}</div><input type="number" step="0.01" min="0" data-c="${c.code}" value="${v[c.code]||''}" placeholder="0.00" class="w-full bg-transparent text-sm font-semibold focus:outline-none"></div>`}).join('');lp()}
+function rs(){$('eid').value='';$('sd').value=T;$('se').value='';$('sn2').value='';$('ft').textContent='Добавить смену';$('ce').classList.add('hidden');rf()}
+
+$('si').oninput=lp;$('se').oninput=lp;$('ce').onclick=rs;
+$('sf').onsubmit=e=>{e.preventDefault();const am={};
+ document.querySelectorAll('[data-c]').forEach(i=>{if(+i.value>0)am[i.dataset.c]=+i.value});
+ const o={id:$('eid').value||'s'+Date.now(),date:$('sd').value,cashier:$('sc').value,amounts:am,exp:+$('se').value||0,note:$('sn2').value.trim()};
+ const i=shifts.findIndex(s=>s.id===o.id);i<0?shifts.push(o):shifts[i]=o;save();
+ V.day=o.date;V.month=o.date.slice(0,7);V.wk=wi(o.date);rs();render()};
+$('tb').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.d){if(confirm('Удалить запись?')){shifts=shifts.filter(s=>s.id!==b.dataset.d);save();render()}}
+ else if(b.dataset.e){const s=shifts.find(x=>x.id===b.dataset.e);$('eid').value=s.id;$('sd').value=s.date;$('sc').value=s.cashier;$('se').value=s.exp||'';$('sn2').value=s.note||'';rf(s.amounts);
+  $('ft').textContent='Редактирование смены';$('ce').classList.remove('hidden');$('sf').scrollIntoView({behavior:'smooth'})}};
+$('tabs').onclick=e=>{const b=e.target.closest('[data-m]');if(b){V.mode=b.dataset.m;render()}};
+$('pd').onchange=e=>{if(!e.target.value)return;if(V.mode==='day'){V.day=e.target.value;V.month=V.day.slice(0,7)}else{V.month=e.target.value;V.wk=0}render()};
+$('wk').onclick=e=>{const b=e.target.closest('[data-w]');if(b){V.wk=+b.dataset.w;render()}};
+$('cf').onchange=e=>{V.cf=e.target.value;render()};
+$('sb').onclick=()=>$('sp').classList.toggle('hidden');
+$('sn').onclick=()=>{cash={c1:$('n1').value.trim()||'Кассир 1',c2:$('n2').value.trim()||'Кассир 2'};save();nm();render()};
+$('ca').onclick=()=>{const code=$('cc').value.trim().toUpperCase();if(!code||cur.some(c=>c.code===code))return;cur.push({code,name:$('cn').value.trim()||code,ta:+$('ct').value||0,ua:+$('cv').value||1});$('cc').value=$('cn').value=$('ct').value=$('cv').value='';save();rc();rf();render()};
+$('sr').onclick=()=>{cur.forEach(c=>{const a=document.querySelector(`[data-ta="${c.code}"]`),u=document.querySelector(`[data-ua="${c.code}"]`);if(a&&u){c.ta=+a.value||0;c.ua=+u.value||1}});save();rc();render()};
+$('cl').onclick=e=>{const x=e.target.dataset.x;if(x){cur=cur.filter(c=>c.code!==x);save();rc();rf();render()}};
+$('ex').onclick=()=>{const[a,b]=range(),l=sel(a,b,V.cf);if(!l.length)return alert('Нет данных для экспорта');
+ let c='\uFEFFДата;Кассир;Продажи TMT;Расход TMT;Прибыль TMT;Другие валюты\n';
+ l.sort((x,y)=>x.date.localeCompare(y.date)).forEach(s=>{const t=s.amounts.TMT||0;c+=`${s.date};"${cash[s.cashier]}";${t};${s.exp};${t-s.exp};"${Object.entries(s.amounts).filter(([k])=>k!=='TMT').map(([k,v])=>v+' '+k).join(', ')}"\n`});
+ const k=document.createElement('a');k.href=URL.createObjectURL(new Blob([c],{type:'text/csv;charset=utf-8'}));k.download=`Otchet_${a}_${b}.csv`;k.click()};
+
+// Вход
+const U='AltynZaman',P='welcome';
+function enter(){$('auth').classList.add('hidden');$('app').classList.remove('hidden');nm();rc();rs();render()}
+$('af').onsubmit=e=>{e.preventDefault();if($('al').value.trim()===U&&$('ap').value===P){localStorage.setItem('az_auth','1');$('ae').classList.add('hidden');enter()}else $('ae').classList.remove('hidden')};
+$('lo').onclick=()=>{localStorage.removeItem('az_auth');$('app').classList.add('hidden');$('auth').classList.remove('hidden');$('al').value=$('ap').value=''};
+if(localStorage.getItem('az_auth')==='1')enter();
+</script></body></html>
